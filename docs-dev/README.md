@@ -55,6 +55,7 @@ English only. Workspace crates publish through normal PR flow to `dev`.
 | [#111](https://github.com/Interchouette-ITC/Serenade/issues/111) | View helpers (`path` / `asset` / partials) |
 | [#122](https://github.com/Interchouette-ITC/Serenade/issues/122) | Admin generator stance (core non-goal; optional bundle parked) |
 | [#123](https://github.com/Interchouette-ITC/Serenade/issues/123) | Docs: lock admin generator as core non-goal |
+| [#124](https://github.com/Interchouette-ITC/Serenade/issues/124) | Parked: optional Admin CRUD bundle (EasyAdmin-shaped) |
 
 Config packages prefer **TOML**; console is the `bin/console` analogue (optional ratatui for rich TUI). Composer maps to **Cargo**, not a second package manager.
 
