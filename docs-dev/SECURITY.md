@@ -14,6 +14,9 @@ AuthN/Z hooks, CSRF tokens, and how HTML apps stay safe. This is **not** a full 
 | `SessionMiddleware` / `AsyncSessionMiddleware` | HTTP middleware: load/save session via `serenade-session` (see [SESSION.md](SESSION.md)) |
 | `CsrfToken` / `CsrfTokenManager` / `HmacCsrfTokenManager` | Issue and validate CSRF tokens (stateless HMAC) |
 | `PasswordHasher` / `Argon2idPasswordHasher` | Hash and verify passwords (Argon2id, PHC string) |
+| `login` / `logout` / `token_from_session` | Persist identity on `serenade-session` (id + roles only) |
+| `SessionTokenMiddleware` / `AsyncSessionTokenMiddleware` | Restore session identity onto `_security_token` |
+| `SECURITY_SESSION_KEY` | `_serenade.security_token` |
 | `CSRF_FIELD_NAME` (`_token`) | Default HTML field name (Symfony habit) |
 
 Request attribute key: `_security_token` (`TOKEN_ATTRIBUTE`). Helper: `request_token(&request)`.
@@ -56,6 +59,34 @@ assert!(!hasher.verify(&hashed, "wrong")?);
 - Empty plain passwords are rejected
 - Malformed stored hashes return `SecurityError::Password`
 - Apps own user rows and when to rehash after parameter changes
+
+## Session login bridge
+
+After a successful password (or other) check, store the identity on the session and restore it on later requests:
+
+```rust
+use serenade_security::{
+    SessionTokenMiddleware, UsernamePasswordToken, InMemoryUser, login, logout,
+};
+use serenade_session::{SessionMiddleware, request_session_mut};
+
+// Outer: session. Inner: restore `_security_token` from session when absent.
+kernel.push_middleware(SessionMiddleware::new(cookies));
+kernel.push_middleware(SessionTokenMiddleware::new());
+
+// On login (controller):
+login(
+    request_session_mut(request).expect("session"),
+    &UsernamePasswordToken::authenticated(InMemoryUser::new("alice", vec!["ROLE_USER".into()]), ""),
+);
+
+// On logout:
+logout(request_session_mut(request).expect("session"));
+```
+
+- Only **user id + roles** are stored (never the password / credential echo)
+- `SessionTokenMiddleware` does not overwrite a token already set (for example by `FirewallMiddleware`)
+- CSRF stays HMAC-stateless and does not require this bridge
 
 ## XSS
 
