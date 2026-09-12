@@ -262,16 +262,13 @@ mod tests {
         let cookies = CookieSession::new(Arc::new(Boom));
         let mut open_fail = HttpKernel::new(|_: &mut Request| Ok(Response::text(200, "x")));
         open_fail.push_middleware(SessionMiddleware::new(cookies.clone()));
-        let response = open_fail.handle(
-            Request::new(Method::Get, "/").with_header("cookie", "SERENADE_SESSION=abc"),
-        );
+        let response = open_fail
+            .handle(Request::new(Method::Get, "/").with_header("cookie", "SERENADE_SESSION=abc"));
         assert_eq!(response.status(), 500);
         assert!(response.body_str().unwrap_or("").contains("load boom"));
 
         let mut save_fail = HttpKernel::new(|request: &mut Request| {
-            request_session_mut(request)
-                .expect("session")
-                .set("k", "v");
+            request_session_mut(request).expect("session").set("k", "v");
             Ok(Response::text(200, "x"))
         });
         save_fail.push_middleware(SessionMiddleware::new(cookies));
