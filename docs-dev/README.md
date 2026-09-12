@@ -10,7 +10,7 @@ English only. Workspace crates publish through normal PR flow to `dev`.
 | [KERNEL.md](KERNEL.md)       | Kernel components and responsibilities                 |
 | [CONSOLE.md](CONSOLE.md)     | Console Application, commands, `--env` / ratatui       |
 | [RECIPES.md](RECIPES.md)     | Flex-like recipes, `serenade new`, Cargo stays PM      |
-| [SECURITY.md](SECURITY.md)   | AuthN/Z, firewall, voters, CSRF, bearer/API key |
+| [SECURITY.md](SECURITY.md)   | AuthN/Z, firewall, voters, CSRF, password hashing |
 | [FORMS.md](FORMS.md)         | HTML forms, CSRF default-on, XSS-safe render   |
 | [I18N.md](I18N.md)           | Translator, catalogues, locale, ICU helpers    |
 | [PROFILER.md](PROFILER.md)   | Web debug toolbar / per-request profiler       |

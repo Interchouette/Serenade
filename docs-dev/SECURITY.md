@@ -13,6 +13,7 @@ AuthN/Z hooks, CSRF tokens, and how HTML apps stay safe. This is **not** a full 
 | `FirewallMiddleware` | HTTP middleware: read header → authenticate → store token on request attributes |
 | `SessionMiddleware` / `AsyncSessionMiddleware` | HTTP middleware: load/save session via `serenade-session` (see [SESSION.md](SESSION.md)) |
 | `CsrfToken` / `CsrfTokenManager` / `HmacCsrfTokenManager` | Issue and validate CSRF tokens (stateless HMAC) |
+| `PasswordHasher` / `Argon2idPasswordHasher` | Hash and verify passwords (Argon2id, PHC string) |
 | `CSRF_FIELD_NAME` (`_token`) | Default HTML field name (Symfony habit) |
 
 Request attribute key: `_security_token` (`TOKEN_ATTRIBUTE`). Helper: `request_token(&request)`.
@@ -37,6 +38,25 @@ Package config scaffold remains `config/packages/security.toml` from the `securi
 Use a long random app secret. Rotate only with a coordinated cutover (old tokens become invalid).
 
 Session stickiness (HTML apps, flash, later login token storage) is separate: register `SessionMiddleware` from `serenade-session` on the HTTP kernel ([SESSION.md](SESSION.md)). CSRF does not depend on that middleware.
+
+## Password hashing
+
+`Argon2idPasswordHasher` implements `PasswordHasher`:
+
+```rust
+use serenade_security::{Argon2idPasswordHasher, PasswordHasher};
+
+let hasher = Argon2idPasswordHasher::new();
+let hashed = hasher.hash("secret")?;
+assert!(hasher.verify(&hashed, "secret")?);
+assert!(!hasher.verify(&hashed, "wrong")?);
+```
+
+- Output is a PHC string (`$argon2id$…`)
+- Empty plain passwords are rejected
+- Malformed stored hashes return `SecurityError::Password`
+- Apps own user rows and when to rehash after parameter changes
+
 ## XSS
 
 Default HTML escaping for form render lives in **`serenade-form`** (`escape_html` / `escape_attr`). Controllers must not concatenate raw user input into HTML responses.

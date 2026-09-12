@@ -1,6 +1,6 @@
 [package]
 name = "serenade-security"
-description = "AuthN/Z hooks: users, tokens, voters, and HTTP firewall middleware"
+description = "AuthN/Z hooks: users, tokens, voters, firewall, CSRF, and password hashing"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,6 +9,7 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+argon2 = { workspace = true }
 getrandom = { workspace = true }
 hmac = { workspace = true }
 serenade-http = { workspace = true }
