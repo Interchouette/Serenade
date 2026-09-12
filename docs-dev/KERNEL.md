@@ -145,6 +145,7 @@ AuthN/Z and CSRF live in **`serenade-security`** ([#10](https://github.com/Inter
 | `FirewallMiddleware` | HTTP middleware: header → `Authenticator` → `_security_token` attribute |
 | `CsrfTokenManager` / `HmacCsrfTokenManager` | Stateless HMAC CSRF tokens (`_token`) |
 | `PasswordHasher` / `Argon2idPasswordHasher` | Argon2id hash/verify (PHC string) |
+| `login` / `SessionTokenMiddleware` | Session identity bridge for HTML logins |
 
 OAuth/OIDC is out of scope. Apps plug bearer or API-key authenticators. HTML forms use CSRF via **`serenade-form`**.
 

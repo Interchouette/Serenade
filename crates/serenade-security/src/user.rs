@@ -77,6 +77,17 @@ impl UsernamePasswordToken {
             authenticated: true,
         }
     }
+
+    /// Authenticated flag with no user (invalid; used to exercise login clear path).
+    #[cfg(test)]
+    #[must_use]
+    pub(crate) const fn authenticated_without_user() -> Self {
+        Self {
+            user: None,
+            credentials: None,
+            authenticated: true,
+        }
+    }
 }
 
 impl TokenInterface for UsernamePasswordToken {
