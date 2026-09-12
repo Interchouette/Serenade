@@ -149,6 +149,19 @@ AuthN/Z and CSRF live in **`serenade-security`** ([#10](https://github.com/Inter
 
 OAuth/OIDC is out of scope. Apps plug bearer or API-key authenticators. HTML forms use CSRF via **`serenade-form`**.
 
+## Admin / back office
+
+Serenade does **not** ship a Symfony 1-style **admin generator** (YAML → full CRUD UI) in the kernel or `FrameworkBundle`. That matches modern Symfony: core has no EasyAdmin; ecosystem and apps own the BO.
+
+| Concern | Owner |
+| --- | --- |
+| Hand-written or SPA admin UIs | App / product (e.g. MyFeed `/admin`, product admin hosts) |
+| Form + CSRF + escape on admin pages | Serenade ([FORMS.md](FORMS.md), [SECURITY.md](SECURITY.md)) |
+| Firewall / session login for admin routes | Serenade primitives; apps wire authenticators |
+| Optional EasyAdmin-shaped Admin CRUD **bundle** | Not in FrameworkBundle; parked design only until ordered ([#124](https://github.com/Interchouette-ITC/Serenade/issues/124)) |
+
+Stance and epic: [#122](https://github.com/Interchouette-ITC/Serenade/issues/122). Docs lock: [#123](https://github.com/Interchouette-ITC/Serenade/issues/123).
+
 ## Forms
 
 HTML form helpers live in **`serenade-form`** ([#110](https://github.com/Interchouette-ITC/Serenade/issues/110)). See [FORMS.md](FORMS.md).
