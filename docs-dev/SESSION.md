@@ -2,7 +2,7 @@
 
 Symfony HttpFoundation-shaped **session** support lives in **`serenade-session`**.
 
-HTTP middleware is a separate follow-up. CSRF remains HMAC-stateless in `serenade-security` (no session required).
+CSRF remains HMAC-stateless in `serenade-security` (no session required).
 
 ## Pieces
 
@@ -14,10 +14,36 @@ HTTP middleware is a separate follow-up. CSRF remains HMAC-stateless in `serenad
 | `MemorySessionStore` | Process-local store (tests / single-node) |
 | `CookieSession` | Load/save via store + session-id cookie |
 | `CookieSessionOptions` | Cookie name, path, `HttpOnly`, `Secure`, `SameSite`, `Max-Age` |
+| `SessionMiddleware` / `AsyncSessionMiddleware` | Open session on request, commit + `Set-Cookie` on response |
+| `SESSION_ATTRIBUTE` | `_serenade_session` (request attribute key) |
 | `DEFAULT_SESSION_COOKIE` | `SERENADE_SESSION` |
 | `FLASH_SESSION_KEY` | `_serenade.flashes` (internal attribute) |
 
-## Cookie + store habit
+## Kernel middleware habit
+
+```rust
+use std::sync::Arc;
+use serenade_http::HttpKernel;
+use serenade_session::{
+    CookieSession, MemorySessionStore, SessionMiddleware, SessionStore, request_session_mut,
+};
+
+let store = Arc::new(MemorySessionStore::new());
+let cookies = CookieSession::new(store);
+let mut kernel = HttpKernel::new(|request| {
+    let session = request_session_mut(request).expect("session middleware");
+    session.set("user_id", "42");
+    session.flash().add("success", "Saved");
+    // ...
+});
+kernel.push_middleware(SessionMiddleware::new(cookies));
+```
+
+For `AsyncHttpKernel`, use `AsyncSessionMiddleware` the same way.
+
+Helpers: `request_session` / `request_session_mut`.
+
+## Cookie + store (without middleware)
 
 ```rust
 use std::sync::Arc;
@@ -26,12 +52,9 @@ use serenade_session::{CookieSession, MemorySessionStore, SessionStore};
 let store = Arc::new(MemorySessionStore::new());
 let cookies = CookieSession::new(store);
 
-// Request: raw Cookie header from the adapter
 let mut session = cookies.open(cookie_header)?;
 session.set("user_id", "42");
-session.flash().add("success", "Saved");
 
-// Response: optional Set-Cookie value
 if let Some(set_cookie) = cookies.commit(&session)? {
     // response.with_header("set-cookie", set_cookie)
 }
@@ -41,6 +64,7 @@ if let Some(set_cookie) = cookies.commit(&session)? {
 - Stale cookie ids that are missing from the store are **replaced** (avoids fixation on dead ids)
 - `invalidate` deletes the store entry and emits `Max-Age=0`
 - Attribute values are `String`; apps JSON-encode structured payloads when needed
+- Middleware commits only when the handler returns a `Response` (errors skip cookie/store write)
 
 ## Flash bag
 
@@ -59,10 +83,11 @@ let peek = session.flash().peek("error");     // keeps
 | Concern | Owner |
 | --- | --- |
 | CSRF tokens | `serenade-security` (`HmacCsrfTokenManager`) |
-| Session stickiness / flash / login token storage | `serenade-session` (+ later middleware) |
+| Session stickiness / flash / login token storage | `serenade-session` (`SessionMiddleware`) |
+
+See also [SECURITY.md](SECURITY.md).
 
 ## Non-goals (this slice)
 
-- Kernel middleware that auto-loads sessions
 - Redis / DB session cluster as a required v1 product
 - Signed cookie that embeds the whole attribute map (id + store only for now)

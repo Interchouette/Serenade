@@ -11,6 +11,7 @@ AuthN/Z hooks, CSRF tokens, and how HTML apps stay safe. This is **not** a full 
 | `Voter` / `AccessDecisionManager` | Affirmative strategy (any `Grant` wins) |
 | `Authenticator` | App-owned credential check |
 | `FirewallMiddleware` | HTTP middleware: read header → authenticate → store token on request attributes |
+| `SessionMiddleware` / `AsyncSessionMiddleware` | HTTP middleware: load/save session via `serenade-session` (see [SESSION.md](SESSION.md)) |
 | `CsrfToken` / `CsrfTokenManager` / `HmacCsrfTokenManager` | Issue and validate CSRF tokens (stateless HMAC) |
 | `CSRF_FIELD_NAME` (`_token`) | Default HTML field name (Symfony habit) |
 
@@ -31,10 +32,11 @@ Package config scaffold remains `config/packages/security.toml` from the `securi
 
 ## CSRF (HMAC)
 
-`HmacCsrfTokenManager::new(secret)` signs tokens as `nonce.mac` for a given intention id (usually the form name). Validation recomputes the MAC; no server-side session store is required for v0.
+`HmacCsrfTokenManager::new(secret)` signs tokens as `nonce.mac` for a given intention id (usually the form name). Validation recomputes the MAC; no server-side session store is required for CSRF v0.
 
 Use a long random app secret. Rotate only with a coordinated cutover (old tokens become invalid).
 
+Session stickiness (HTML apps, flash, later login token storage) is separate: register `SessionMiddleware` from `serenade-session` on the HTTP kernel ([SESSION.md](SESSION.md)). CSRF does not depend on that middleware.
 ## XSS
 
 Default HTML escaping for form render lives in **`serenade-form`** (`escape_html` / `escape_attr`). Controllers must not concatenate raw user input into HTML responses.
@@ -43,4 +45,4 @@ Default HTML escaping for form render lives in **`serenade-form`** (`escape_html
 
 - OAuth2 / OIDC providers
 - Built-in user persistence
-- Full session framework (CSRF v0 is HMAC-stateless; session store is `serenade-session`, see [SESSION.md](SESSION.md))
+- Coupling CSRF to a server session (CSRF v0 stays HMAC-stateless; session is optional via `serenade-session`)

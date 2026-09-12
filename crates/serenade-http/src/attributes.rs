@@ -28,6 +28,13 @@ impl AttributeBag {
         self.values.get(key).and_then(|value| value.downcast_ref())
     }
 
+    /// Mutably borrows a value of type `T` stored at `key`.
+    pub fn get_mut<T: Any + Send + Sync>(&mut self, key: &str) -> Option<&mut T> {
+        self.values
+            .get_mut(key)
+            .and_then(|value| value.downcast_mut())
+    }
+
     /// Removes and returns a value of type `T` stored at `key`.
     #[must_use]
     pub fn remove<T: Any + Send + Sync>(&mut self, key: &str) -> Option<T> {

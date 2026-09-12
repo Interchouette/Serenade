@@ -101,9 +101,14 @@ fn attributes_roundtrip() {
     let mut request = Request::new(Method::Get, "/items/1");
     request.attributes_mut().insert("item_id", 1_u64);
     assert_eq!(request.attributes().get::<u64>("item_id"), Some(&1));
+    *request
+        .attributes_mut()
+        .get_mut::<u64>("item_id")
+        .expect("id") = 2;
+    assert_eq!(request.attributes().get::<u64>("item_id"), Some(&2));
     assert!(request.attributes().contains("item_id"));
     assert_eq!(request.attributes().len(), 1);
-    assert_eq!(request.attributes_mut().remove::<u64>("item_id"), Some(1));
+    assert_eq!(request.attributes_mut().remove::<u64>("item_id"), Some(2));
     assert!(request.attributes().is_empty());
     let debug = format!("{:?}", request.attributes());
     assert!(debug.contains("AttributeBag"));
