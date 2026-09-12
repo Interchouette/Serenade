@@ -21,4 +21,10 @@ pub enum SecurityError {
     /// CSRF token generation failed (RNG).
     #[error("CSRF token generation failed")]
     CsrfGeneration,
+    /// Password hash or verify failed.
+    #[error("password error: {message}")]
+    Password {
+        /// Underlying message.
+        message: String,
+    },
 }

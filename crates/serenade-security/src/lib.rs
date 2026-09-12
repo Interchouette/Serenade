@@ -1,19 +1,21 @@
-//! AuthN/Z hooks: users, tokens, voters, HTTP firewall, and CSRF.
+//! AuthN/Z hooks: users, tokens, voters, HTTP firewall, CSRF, and password hashing.
 //!
 //! Full OAuth/OIDC is out of scope. Apps plug bearer or API-key authenticators
 //! into [`FirewallMiddleware`]. CSRF uses [`HmacCsrfTokenManager`] (stateless HMAC).
-//! See `docs-dev/SECURITY.md`.
+//! Password hashing uses [`Argon2idPasswordHasher`]. See `docs-dev/SECURITY.md`.
 
 mod access;
 mod csrf;
 mod error;
 mod firewall;
+mod password;
 mod user;
 
 pub use access::{AccessDecisionManager, RoleVoter, Subject, Vote, Voter};
 pub use csrf::{CSRF_FIELD_NAME, CsrfToken, CsrfTokenManager, HmacCsrfTokenManager};
 pub use error::SecurityError;
 pub use firewall::{Authenticator, FirewallMiddleware, TOKEN_ATTRIBUTE, request_token};
+pub use password::{Argon2idPasswordHasher, PasswordHasher};
 pub use user::{InMemoryUser, TokenInterface, UserInterface, UsernamePasswordToken};
 
 /// Compile-time crate version for diagnostics.
