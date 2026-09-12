@@ -239,6 +239,19 @@ Basic document search lives in **`serenade-search`** ([#129](https://github.com/
 
 No SaaS engine in core. Apps wire adapters when they need one.
 
+## Mailer / Mime lite
+
+Outgoing message types live in **`serenade-mailer`** ([#153](https://github.com/Interchouette-ITC/Serenade/issues/153)). See [MAILER.md](MAILER.md).
+
+| Piece | Role |
+| --- | --- |
+| `Address` | Mailbox (email + optional display name) |
+| `Body` | Text and/or HTML parts |
+| `Attachment` | Filename, content type, bytes |
+| `Email` | Builder for From/To/Cc/Bcc/Reply-To, subject, body, attachments |
+
+Transports and DI wiring are a separate slice.
+
 ## Observability (structured logging)
 
 `serenade-observability` documents Monolog-like conventions on **`tracing`**: named channels (`serenade::app`, `serenade::request`, …), an app-owned `var/log/{env}.log` layout, and `LoggingConfig` / `init` for stderr + daily rolling files. Apps call `init` from `main`; crates do not require a global logger. See [OBSERVABILITY.md](OBSERVABILITY.md).

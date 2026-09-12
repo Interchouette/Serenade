@@ -1,0 +1,15 @@
+[package]
+name = "serenade-mailer"
+description = "Email message and Mime lite types (Symfony Mailer + Mime shaped)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
