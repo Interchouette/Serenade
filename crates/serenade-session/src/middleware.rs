@@ -271,10 +271,24 @@ mod tests {
             request_session_mut(request).expect("session").set("k", "v");
             Ok(Response::text(200, "x"))
         });
-        save_fail.push_middleware(SessionMiddleware::new(cookies));
+        save_fail.push_middleware(SessionMiddleware::new(cookies.clone()));
         let response = save_fail.handle(Request::new(Method::Get, "/"));
         assert_eq!(response.status(), 500);
         assert!(response.body_str().unwrap_or("").contains("save boom"));
+
+        let mut invalidate = HttpKernel::new(|request: &mut Request| {
+            request_session_mut(request).expect("session").invalidate();
+            Ok(Response::text(200, "bye"))
+        });
+        invalidate.push_middleware(SessionMiddleware::new(cookies));
+        let response = invalidate.handle(Request::new(Method::Get, "/"));
+        assert_eq!(response.status(), 200);
+        assert!(
+            response
+                .headers()
+                .get("set-cookie")
+                .is_some_and(|v| v.contains("Max-Age=0"))
+        );
     }
 
     #[tokio::test]
