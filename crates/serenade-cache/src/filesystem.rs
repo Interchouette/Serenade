@@ -220,17 +220,27 @@ fn unix_ms_from_instant(expires_at: Option<Instant>) -> u64 {
     let Some(deadline) = expires_at else {
         return 0;
     };
-    let now = Instant::now();
-    if deadline <= now {
+    let now_instant = Instant::now();
+    if deadline <= now_instant {
         return 0;
     }
-    let remaining = deadline.duration_since(now);
-    SystemTime::now()
+    let remaining = deadline.duration_since(now_instant);
+    let now = SystemTime::now();
+    let now_ms = now.duration_since(UNIX_EPOCH).map_or(0, |duration| {
+        u64::try_from(duration.as_millis()).unwrap_or(0)
+    });
+    let expires = now
         .checked_add(remaining)
         .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
         .map_or(0, |duration| {
             u64::try_from(duration.as_millis()).unwrap_or(u64::MAX)
-        })
+        });
+    // Sub-millisecond remaining can floor to `now_ms`; keep a future Instant future on disk.
+    if expires <= now_ms {
+        now_ms.saturating_add(1)
+    } else {
+        expires
+    }
 }
 
 fn read_file(path: &Path) -> Result<Option<Vec<u8>>, CacheError> {
@@ -344,10 +354,11 @@ mod tests {
         .expect("open");
         let mut item = ArrayCacheItem::miss("tmp");
         item.set(Arc::new(String::from("gone")));
-        item.expires_after(Some(Duration::from_millis(30)));
+        // Generous TTL: short values flake when CI scheduling delays save past Instant expiry.
+        item.expires_after(Some(Duration::from_millis(200)));
         pool.save(item).expect("save");
         assert!(pool.get_item("tmp").expect("get").is_hit());
-        thread::sleep(Duration::from_millis(50));
+        thread::sleep(Duration::from_millis(350));
         assert!(!pool.get_item("tmp").expect("get").is_hit());
         let path = dir
             .path()
@@ -434,6 +445,11 @@ mod tests {
         assert!(!is_expired_unix_ms(u64::MAX));
         assert_eq!(unix_ms_from_instant(None), 0);
         assert_eq!(unix_ms_from_instant(Some(Instant::now())), 0);
+        assert_ne!(
+            unix_ms_from_instant(Some(Instant::now() + Duration::from_nanos(500))),
+            0,
+            "sub-millisecond future Instant must not encode as no-expiry"
+        );
 
         assert!(
             read_file(std::path::Path::new("/")).is_err(),
