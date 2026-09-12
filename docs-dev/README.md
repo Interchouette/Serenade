@@ -6,8 +6,8 @@ English only. Workspace crates publish through normal PR flow to `dev`.
 
 | Doc                          | Topic                                                  |
 | ---------------------------- | ------------------------------------------------------ |
-| [VISION.md](VISION.md)       | Why Symfony-shaped Rust; what Serenade is not          |
-| [KERNEL.md](KERNEL.md)       | Kernel components and responsibilities                 |
+| [VISION.md](VISION.md)       | Why Symfony-shaped Rust; what Serenade is not (incl. no core admin generator) |
+| [KERNEL.md](KERNEL.md)       | Kernel components; admin / back-office ownership |
 | [CONSOLE.md](CONSOLE.md)     | Console Application, commands, `--env` / ratatui       |
 | [RECIPES.md](RECIPES.md)     | Flex-like recipes, `serenade new`, Cargo stays PM      |
 | [SECURITY.md](SECURITY.md)   | AuthN/Z, firewall, CSRF, password hashing, session login |
@@ -22,7 +22,7 @@ English only. Workspace crates publish through normal PR flow to `dev`.
 | [SEARCH.md](SEARCH.md)       | Document index contracts, MemorySearchAdapter          |
 | [OBSERVABILITY.md](OBSERVABILITY.md) | Tracing init, channels, `var/log` file sinks    |
 | [ERRORS.md](ERRORS.md)       | `thiserror` / Display / Debug / API error habits       |
-| [BUNDLES.md](BUNDLES.md)     | Bundle model, extension points, composition            |
+| [BUNDLES.md](BUNDLES.md)     | Bundle model; admin CRUD is not FrameworkBundle        |
 | [WASM.md](WASM.md)           | Wasm host plumbing (wasmtime CM + Wasmer WASIX)        |
 | [PERSISTENCE.md](PERSISTENCE.md) | Adapter pattern, repository traits, `UnitOfWork` |
 | [RUSTASHOP.md](RUSTASHOP.md) | Illustrative RustaShop crate map (example, not locked) |
@@ -52,7 +52,8 @@ English only. Workspace crates publish through normal PR flow to `dev`.
 | [#57](https://github.com/Interchouette-ITC/Serenade/issues/57) | Observability / structured logging (Monolog-like) |
 | [#110](https://github.com/Interchouette-ITC/Serenade/issues/110) | Forms, CSRF, HTML escape |
 | [#111](https://github.com/Interchouette-ITC/Serenade/issues/111) | View helpers (`path` / `asset` / partials) |
-| [#112](https://github.com/Interchouette-ITC/Serenade/issues/112) | MyFeed beginner demo (`examples/MyFeed`) |
+| [#122](https://github.com/Interchouette-ITC/Serenade/issues/122) | Admin generator stance (core non-goal; optional bundle parked) |
+| [#123](https://github.com/Interchouette-ITC/Serenade/issues/123) | Docs: lock admin generator as core non-goal |
 
 Config packages prefer **TOML**; console is the `bin/console` analogue (optional ratatui for rich TUI). Composer maps to **Cargo**, not a second package manager.
 

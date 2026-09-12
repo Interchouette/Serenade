@@ -44,6 +44,7 @@ Symfony organizes its own features as bundles (`FrameworkBundle`, `SecurityBundl
 | A commerce product | That is RustaShop (or other apps) |
 | A UI framework | Angular, rangular/Leptos, etc. stay in the application |
 | A single HTTP crate mandate | Actix, Axum, or Tower-only apps integrate via HTTP foundation adapters |
+| An admin CRUD generator in core | Same split as modern Symfony: framework owns Form / CSRF / security; back-office UIs are app-owned (see [KERNEL.md](KERNEL.md#admin-back-office)) |
 
 ## Persistence and HTTP: application choice
 
@@ -80,3 +81,4 @@ RustaShop should feel “ Symfony-backed ” in **architecture**, not in PHP or 
 - 1:1 Symfony PHP API port
 - Shipping every Symfony component before kernel + DI + events + HTTP foundation exist
 - Replacing RustaShop `docs-dev` commerce foundations
+- YAML / config → full CRUD **admin generator** inside the kernel or `FrameworkBundle` ([#122](https://github.com/Interchouette-ITC/Serenade/issues/122), [#123](https://github.com/Interchouette-ITC/Serenade/issues/123))
