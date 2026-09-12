@@ -1,6 +1,3 @@
-# serenade-session
-
-Session attribute bag, flash bag, `SessionStore` contract, in-memory store, and
-cookie session id lifecycle (`CookieSession`).
-
-See `docs-dev/SESSION.md`.
+Session attribute bag, flash bag, `SessionStore` contract, in-memory store,
+cookie session id lifecycle (`CookieSession`), and HTTP middleware
+(`SessionMiddleware` / `AsyncSessionMiddleware`).

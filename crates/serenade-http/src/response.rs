@@ -55,6 +55,11 @@ impl Response {
         &self.headers
     }
 
+    /// Mutable headers (middleware).
+    pub const fn headers_mut(&mut self) -> &mut Headers {
+        &mut self.headers
+    }
+
     /// Raw body bytes.
     #[must_use]
     pub fn body(&self) -> &[u8] {

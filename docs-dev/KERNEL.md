@@ -15,7 +15,7 @@ Cross-cutting infrastructure Serenade owns. Products register domain services an
 | **Configuration** | Layered config (defaults, env, TOML package files; YAML still accepted) |
 | **Console** | CLI application (`bin/console` analogue), commands, optional rich TUI |
 | **Cache** | PSR-like pools (memory / filesystem / Redis, tags) plus HTTP response cache headers in `serenade-http` |
-| **Session** | Session bag, `SessionStore`, cookie session id (`serenade-session`) |
+| **Session** | Session bag, flash, `SessionStore`, cookie session, HTTP middleware (`serenade-session`) |
 | **Security** | AuthN/Z hooks, firewall, voters, CSRF token manager |
 | **Form** | HTML forms: bind, CSRF by default, XSS-safe render ([FORMS.md](FORMS.md)) |
 | **Translation** | Translator, catalogues, locale negotiation, ICU format helpers ([I18N.md](I18N.md)) |
@@ -208,8 +208,9 @@ Session stickiness lives in **`serenade-session`**. See [SESSION.md](SESSION.md)
 | `FlashBag` | One-shot messages on the session |
 | `SessionStore` / `MemorySessionStore` | Persist attributes by opaque id |
 | `CookieSession` | Open/commit with session-id cookie |
+| `SessionMiddleware` / `AsyncSessionMiddleware` | Load/save per request on `HttpKernel` / `AsyncHttpKernel` |
 
-HTTP middleware is a follow-up. CSRF stays in `serenade-security` (HMAC, no session required).
+Push `SessionMiddleware::new(CookieSession::new(store))` (first registered is outermost). Controllers use `request_session` / `request_session_mut`. CSRF stays in `serenade-security` (HMAC, no session required).
 
 ## Search / indexation
 

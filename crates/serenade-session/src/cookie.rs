@@ -109,6 +109,7 @@ impl SameSite {
 }
 
 /// Opens and commits sessions using a store plus a session-id cookie.
+#[derive(Clone)]
 pub struct CookieSession {
     store: Arc<dyn SessionStore>,
     options: CookieSessionOptions,

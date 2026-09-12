@@ -1,6 +1,6 @@
 [package]
 name = "serenade-session"
-description = "Session bag, flash bag, SessionStore, memory store, and cookie session id"
+description = "Session bag, flash bag, SessionStore, cookie session, and HTTP middleware"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,7 +10,11 @@ rust-version.workspace = true
 
 [dependencies]
 getrandom = { workspace = true }
+serenade-http = { workspace = true }
 thiserror = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
 
 [lints]
 workspace = true
