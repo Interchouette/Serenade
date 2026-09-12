@@ -150,20 +150,32 @@ fn register_routes_propagates_name_collision() {
 
 #[test]
 fn register_routes_propagates_show_name_collision() {
-    let mut registry = AdminRegistry::new();
-    registry
-        .register(AdminResource::new("product", "/admin/products"))
-        .expect("register");
-    let mut collection = RouteCollection::new();
-    collection
-        .add(Route::with_method(
-            "admin_product_show",
-            "/collision-show",
-            Method::Get,
-        ))
-        .expect("preexisting show");
-    let err = register_admin_routes(&mut collection, &registry).expect_err("show collision");
-    assert!(err.to_string().contains("admin_product_show"));
+    assert_route_name_collision("admin_product_show");
+}
+
+#[test]
+fn register_routes_propagates_new_name_collision() {
+    assert_route_name_collision("admin_product_new");
+}
+
+#[test]
+fn register_routes_propagates_create_name_collision() {
+    assert_route_name_collision("admin_product_create");
+}
+
+#[test]
+fn register_routes_propagates_edit_name_collision() {
+    assert_route_name_collision("admin_product_edit");
+}
+
+#[test]
+fn register_routes_propagates_update_name_collision() {
+    assert_route_name_collision("admin_product_update");
+}
+
+#[test]
+fn register_routes_propagates_delete_name_collision() {
+    assert_route_name_collision("admin_product_delete");
 }
 
 #[test]
@@ -302,6 +314,22 @@ impl AdminResourceHandler for MemoryHandler {
     fn delete(&self, id: &str) -> Result<bool, AdminError> {
         Ok(self.rows.lock().expect("lock").remove(id).is_some())
     }
+}
+
+fn assert_route_name_collision(route_name: &str) {
+    let mut registry = AdminRegistry::new();
+    registry
+        .register(AdminResource::new("product", "/admin/products"))
+        .expect("register");
+    let mut collection = RouteCollection::new();
+    collection
+        .add(Route::with_method(route_name, "/collision", Method::Get))
+        .expect("preexisting");
+    let err = register_admin_routes(&mut collection, &registry).expect_err("collision");
+    assert!(
+        err.to_string().contains(route_name),
+        "expected {route_name} in {err}"
+    );
 }
 
 fn extract_csrf(html: &str) -> String {
