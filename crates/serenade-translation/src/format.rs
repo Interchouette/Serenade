@@ -203,7 +203,8 @@ fn icu_format_number(value: f64, locale: &Locale, fraction_digits: u8) -> String
     let decimal = decimal_from_f64(value, fraction_digits);
     let mut options = DecimalFormatterOptions::default();
     options.grouping_strategy = Some(GroupingStrategy::Auto);
-    let formatter = DecimalFormatter::try_new(icu_locale.into(), options).expect("icu decimal data");
+    let formatter =
+        DecimalFormatter::try_new(icu_locale.into(), options).expect("icu decimal data");
     formatter.format(&decimal).write_to_string().into_owned()
 }
 
@@ -229,8 +230,8 @@ fn icu_format_currency(amount: f64, currency: &str, locale: &Locale) -> Option<S
 #[cfg(feature = "icu")]
 fn icu_language_display_name(language: &str, display_locale: &Locale) -> Option<String> {
     use icu_experimental::displaynames::{DisplayNamesOptions, LanguageDisplayNames};
-    use icu_locale::subtags::Language;
     use icu_locale::Locale as IcuLocale;
+    use icu_locale::subtags::Language;
 
     let lang = Language::try_from_str(language.trim()).ok()?;
     let icu_locale = display_locale.as_str().parse::<IcuLocale>().ok()?;
@@ -242,8 +243,8 @@ fn icu_language_display_name(language: &str, display_locale: &Locale) -> Option<
 #[cfg(feature = "icu")]
 fn icu_region_display_name(region: &str, display_locale: &Locale) -> Option<String> {
     use icu_experimental::displaynames::{DisplayNamesOptions, RegionDisplayNames};
-    use icu_locale::subtags::Region;
     use icu_locale::Locale as IcuLocale;
+    use icu_locale::subtags::Region;
 
     let region = Region::try_from_str(region.trim()).ok()?;
     let icu_locale = display_locale.as_str().parse::<IcuLocale>().ok()?;

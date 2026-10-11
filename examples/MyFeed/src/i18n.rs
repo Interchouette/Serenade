@@ -1,8 +1,6 @@
 //! UI chrome strings resolved through Serenade Translator.
 
-use serenade_translation::{
-    Locale, Translator, TranslatorInterface, format_currency,
-};
+use serenade_translation::{Locale, Translator, TranslatorInterface, format_currency};
 
 /// Translated chrome for one request (post bodies stay author language).
 #[derive(Clone, Debug)]

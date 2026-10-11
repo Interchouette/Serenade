@@ -511,10 +511,7 @@ fn display_names_and_currency_locale_patterns() {
             region_display_name("US", &en).as_deref(),
             Some("United States")
         );
-        assert_eq!(
-            region_display_name("FR", &fr).as_deref(),
-            Some("France")
-        );
+        assert_eq!(region_display_name("FR", &fr).as_deref(), Some("France"));
         assert!(language_display_name("zzzz", &en).is_none());
         let usd = format_currency(1234.5, "USD", &en_us);
         assert!(usd.contains('1') && usd.contains('2'), "got {usd}");
