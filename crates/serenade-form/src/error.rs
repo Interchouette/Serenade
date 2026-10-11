@@ -14,4 +14,10 @@ pub enum FormError {
     /// Form was not submitted (wrong method or empty bind).
     #[error("form not submitted")]
     NotSubmitted,
+    /// View ↔ model transform failed.
+    #[error("form transform failed: {0}")]
+    Transform(String),
+    /// Flat key path conflicts (leaf vs map) while nesting form data.
+    #[error("nested form data conflict at {0}")]
+    NestedConflict(String),
 }

@@ -1,10 +1,18 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use serenade_http::{Method, Request};
 use serenade_security::HmacCsrfTokenManager;
 use serenade_validator::NotBlank;
 
-use super::{Form, FormError, FormStatus, escape_attr, escape_html, parse_urlencoded, version};
+use super::{
+    BoolToStringTransformer, COLLECTION_PROTOTYPE_INDEX, CheckboxOptions, ChoiceEntry,
+    ChoiceOptions, ChoiceToValueTransformer, CollectionPrototypeMeta, FieldConfig, FieldKind, Form,
+    FormError, FormStatus, HiddenOptions, I64ToStringTransformer, NumberOptions, PasswordOptions,
+    TextareaOptions, collection_field_name, collection_indices, collection_prototype_field_name,
+    escape_attr, escape_html, parse_urlencoded, parse_urlencoded_multi, unflatten_form_data,
+    version,
+};
 
 #[test]
 fn version_is_non_empty() {
@@ -53,6 +61,17 @@ fn parse_urlencoded_edge_cases() {
 }
 
 #[test]
+fn parse_urlencoded_multi_keeps_order() {
+    let map = parse_urlencoded_multi(b"tag=a&tag=b&tag=c").expect("multi");
+    assert_eq!(
+        map.get("tag").map(Vec::as_slice),
+        Some([String::from("a"), String::from("b"), String::from("c")].as_slice())
+    );
+    let last_wins = parse_urlencoded(b"tag=a&tag=b").expect("last");
+    assert_eq!(last_wins.get("tag").map(String::as_str), Some("b"));
+}
+
+#[test]
 fn form_csrf_and_validate_roundtrip() {
     let mgr = HmacCsrfTokenManager::new(b"unit-test-secret-key!!!!!!!!!!!!");
     let mut form = Form::builder("comment")
@@ -97,6 +116,7 @@ fn form_csrf_and_validate_roundtrip() {
     assert!(!form.set("missing", "x"));
     assert_eq!(form.get("missing"), None);
     assert_eq!(form.data().get("body").map(String::as_str), Some("updated"));
+    assert_eq!(form.fields()[0].kind(), FieldKind::Text);
 }
 
 #[test]
@@ -171,4 +191,239 @@ fn form_get_is_not_submitted() {
         form.handle_request(&request, &mgr).expect("get"),
         FormStatus::NotSubmitted
     );
+}
+
+#[test]
+fn field_kinds_render_and_bind() {
+    let mgr = HmacCsrfTokenManager::new(b"unit-test-secret-key!!!!!!!!!!!!");
+    let choice = ChoiceOptions {
+        choices: vec![
+            ChoiceEntry::with_label("a", "Alpha"),
+            ChoiceEntry::with_label("b", "Beta"),
+        ],
+        multiple: false,
+        expanded: false,
+    };
+    let mut form = Form::builder("kinds")
+        .csrf(false)
+        .field_config(
+            "note",
+            FieldConfig::Textarea(TextareaOptions {
+                placeholder: Some("hi".into()),
+                rows: Some(3),
+            }),
+            vec![],
+        )
+        .field_config(
+            "secret",
+            FieldConfig::Password(PasswordOptions::default()),
+            vec![],
+        )
+        .field_config("nid", FieldConfig::Hidden(HiddenOptions::default()), vec![])
+        .field_config(
+            "active",
+            FieldConfig::Checkbox(CheckboxOptions::default()),
+            vec![],
+        )
+        .field_config("pick", FieldConfig::Choice(choice), vec![])
+        .field_config(
+            "qty",
+            FieldConfig::Number(NumberOptions {
+                min: Some(0),
+                max: Some(10),
+                step: Some(1),
+            }),
+            vec![],
+        )
+        .build();
+
+    assert_eq!(form.fields()[0].kind(), FieldKind::Textarea);
+    assert_eq!(form.fields()[3].kind(), FieldKind::Checkbox);
+    let html = form.render().expect("render").as_html().to_owned();
+    assert!(html.contains("<textarea"));
+    assert!(html.contains(r#"type="password""#));
+    assert!(html.contains(r#"type="hidden""#));
+    assert!(html.contains(r#"type="checkbox""#));
+    assert!(html.contains("<select"));
+    assert!(html.contains(r#"type="number""#));
+
+    let body = b"note=hello&secret=x&nid=9&active=1&pick=b&qty=4";
+    let request = Request::new(Method::Post, "/").with_body(body.to_vec());
+    assert_eq!(
+        form.handle_request(&request, &mgr).expect("bind"),
+        FormStatus::Bound
+    );
+    assert_eq!(form.get("note"), Some("hello"));
+    assert_eq!(form.get("pick"), Some("b"));
+    assert_eq!(form.get("qty"), Some("4"));
+    assert_eq!(form.get("active"), Some("1"));
+}
+
+#[test]
+fn compound_bind_dotted_names_and_unflatten() {
+    let mgr = HmacCsrfTokenManager::new(b"unit-test-secret-key!!!!!!!!!!!!");
+    let mut form = Form::builder("profile")
+        .csrf(false)
+        .compound("address", |c| {
+            c.field("street", vec![])
+                .field("city", vec![])
+                .compound("geo", |g| g.field("lat", vec![]))
+        })
+        .build();
+    assert!(form.get("address.street").is_some());
+    assert!(form.get("address.geo.lat").is_some());
+
+    let body = b"address.street=Main&address.city=Paris&address.geo.lat=48";
+    let request = Request::new(Method::Post, "/").with_body(body.to_vec());
+    assert_eq!(
+        form.handle_request(&request, &mgr).expect("bind"),
+        FormStatus::Bound
+    );
+    assert_eq!(form.get("address.street"), Some("Main"));
+    assert_eq!(form.get("address.geo.lat"), Some("48"));
+
+    let nested = unflatten_form_data(&form.data()).expect("nest");
+    assert_eq!(
+        nested["address"].as_map().unwrap()["street"].as_str(),
+        Some("Main")
+    );
+    assert_eq!(
+        nested["address"].as_map().unwrap()["geo"].as_map().unwrap()["lat"].as_str(),
+        Some("48")
+    );
+}
+
+#[test]
+fn collection_bind_indexed_keys_and_prototype() {
+    let mgr = HmacCsrfTokenManager::new(b"unit-test-secret-key!!!!!!!!!!!!");
+    let mut form = Form::builder("order")
+        .csrf(false)
+        .collection("items", 2, |entry| {
+            entry.field("name", vec![]).field_config(
+                "qty",
+                FieldConfig::Number(NumberOptions::default()),
+                vec![],
+            )
+        })
+        .build();
+    assert_eq!(form.get("items[0][name]").map(|_| true), Some(true));
+    assert_eq!(
+        collection_field_name("items", "0", "name"),
+        "items[0][name]"
+    );
+    assert_eq!(
+        collection_prototype_field_name("items", "name"),
+        format!("items[{COLLECTION_PROTOTYPE_INDEX}][name]")
+    );
+    let proto = CollectionPrototypeMeta::new("items");
+    assert!(
+        proto
+            .data_attributes_html()
+            .contains("data-collection=\"items\"")
+    );
+    assert_eq!(proto.field_name("name"), "items[__name__][name]");
+
+    let body = b"items%5B0%5D%5Bname%5D=Apple&items%5B0%5D%5Bqty%5D=2&items%5B1%5D%5Bname%5D=Pear&items%5B1%5D%5Bqty%5D=1";
+    let request = Request::new(Method::Post, "/").with_body(body.to_vec());
+    assert_eq!(
+        form.handle_request(&request, &mgr).expect("bind"),
+        FormStatus::Bound
+    );
+    assert_eq!(form.get("items[0][name]"), Some("Apple"));
+    assert_eq!(form.get("items[1][qty]"), Some("1"));
+
+    let indices = collection_indices(&form.data(), "items");
+    assert_eq!(indices, vec![0, 1]);
+
+    let nested = unflatten_form_data(&form.data()).expect("nest");
+    assert_eq!(
+        nested["items"].as_map().unwrap()["0"].as_map().unwrap()["name"].as_str(),
+        Some("Apple")
+    );
+}
+
+#[test]
+fn transformers_bool_i64_choice() {
+    let mgr = HmacCsrfTokenManager::new(b"unit-test-secret-key!!!!!!!!!!!!");
+    let choice = ChoiceOptions {
+        choices: vec![ChoiceEntry::new("red"), ChoiceEntry::new("blue")],
+        multiple: true,
+        expanded: true,
+    };
+    let choice_transformer = Arc::new(ChoiceToValueTransformer::new(choice.clone()));
+    let mut form = Form::builder("prefs")
+        .csrf(false)
+        .field_transformed(
+            "active",
+            FieldConfig::Checkbox(CheckboxOptions::default()),
+            vec![],
+            Arc::new(BoolToStringTransformer),
+        )
+        .field_transformed(
+            "count",
+            FieldConfig::Number(NumberOptions::default()),
+            vec![],
+            Arc::new(I64ToStringTransformer),
+        )
+        .field_transformed(
+            "color",
+            FieldConfig::Choice(choice),
+            vec![],
+            choice_transformer,
+        )
+        .build();
+
+    let body = b"active=on&count=42&color=red&color=blue";
+    let request = Request::new(Method::Post, "/").with_body(body.to_vec());
+    assert_eq!(
+        form.handle_request(&request, &mgr).expect("bind"),
+        FormStatus::Bound
+    );
+    assert_eq!(form.get("active"), Some("1"));
+    assert_eq!(form.get("count"), Some("42"));
+    assert_eq!(form.get("color"), Some("red blue"));
+
+    let html = form.render().expect("render").as_html().to_owned();
+    assert!(html.contains("checked"));
+    assert!(html.contains(r#"type="checkbox""#));
+
+    let bad = Request::new(Method::Post, "/").with_body(b"count=nope".to_vec());
+    let err = form.handle_request(&bad, &mgr).expect_err("i64");
+    assert!(matches!(err, FormError::Transform(_)));
+}
+
+#[test]
+fn csrf_still_default_on_with_compound() {
+    let mgr = HmacCsrfTokenManager::new(b"unit-test-secret-key!!!!!!!!!!!!");
+    let mut form = Form::builder("profile")
+        .compound("address", |c| c.field("street", vec![]))
+        .build();
+    form.prepare_csrf(&mgr).expect("csrf");
+    let token = form.render().expect("render").as_html().to_owned();
+    assert!(token.contains(r#"name="_token""#));
+
+    let token_value = token
+        .split("value=\"")
+        .nth(1)
+        .expect("value")
+        .split('"')
+        .next()
+        .expect("end")
+        .to_owned();
+    let body = format!("_token={token_value}&address.street=Main");
+    let request = Request::new(Method::Post, "/").with_body(body.into_bytes());
+    assert_eq!(
+        form.handle_request(&request, &mgr).expect("bind"),
+        FormStatus::Bound
+    );
+    assert_eq!(form.get("address.street"), Some("Main"));
+}
+
+#[test]
+fn unflatten_conflict_errors() {
+    let mut flat = HashMap::new();
+    flat.insert("address".into(), "x".into());
+    flat.insert("address.street".into(), "y".into());
+    let err = unflatten_form_data(&flat).expect_err("conflict");
+    assert!(matches!(err, FormError::NestedConflict(_)));
 }
